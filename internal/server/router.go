@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/alexPavlikov/auth-service/internal/server/locations"
 	"github.com/go-chi/chi"
@@ -23,6 +24,7 @@ func (r *Router) Build() http.Handler {
 
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
+	router.Use(middleware.Timeout(2 * time.Second))
 
 	router.Post("/v1/auth", r.Handler.Auth)
 	router.Post("/v1/refresh", r.Handler.Refresh)

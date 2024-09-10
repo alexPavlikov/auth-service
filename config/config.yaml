@@ -5,9 +5,10 @@ postgres:
   connect_timeout: 200
   pg_server:
     path: localhost
-    port: 6543
+    port: 5432
   user: postgres
-  password: qwerty1234
-  db: auth
+  password: AlexPAV2307
+  db: auth-service
 loglevel: 0
 server_timeout: 500
+secret: qwerty

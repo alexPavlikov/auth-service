@@ -15,6 +15,8 @@ type Config struct {
 	Postgres      Postgres `mapstructure:"postgres"`
 	LogLevel      int      `mapstructure:"loglevel"`
 	ServerTimeout int      `mapstructure:"server_timeout"`
+	//TokenID       string   `mapstructure:"token_id"`
+	Secret string `mapstructure:"secret"`
 }
 
 type Postgres struct {
@@ -28,6 +30,10 @@ type Postgres struct {
 type Server struct {
 	Path string `mapstructure:"path"`
 	Port int    `mapstructure:"port"`
+}
+
+func (s *Server) ToString() string {
+	return fmt.Sprintf("%s:%d", s.Path, s.Port)
 }
 
 func Load() (*Config, error) {

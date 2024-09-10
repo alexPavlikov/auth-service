@@ -9,10 +9,10 @@ import (
 
 	"github.com/alexPavlikov/auth-service/internal/config"
 	"github.com/alexPavlikov/auth-service/internal/postgres"
+	"github.com/alexPavlikov/auth-service/internal/repository"
 	"github.com/alexPavlikov/auth-service/internal/server"
 	"github.com/alexPavlikov/auth-service/internal/server/locations"
-	"github.com/alexPavlikov/auth-service/internal/server/repository"
-	"github.com/alexPavlikov/auth-service/internal/server/service"
+	"github.com/alexPavlikov/auth-service/internal/service"
 )
 
 func Run() error {
@@ -22,8 +22,8 @@ func Run() error {
 		return fmt.Errorf("cmd run error: %w", err)
 	}
 
-	time := time.Duration(cfg.Postgres.ConnectTimeout) * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), time)
+	t := time.Duration(cfg.Postgres.ConnectTimeout) * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), t)
 	defer cancel()
 
 	db, err := postgres.Connect(ctx, *cfg)
@@ -38,7 +38,16 @@ func Run() error {
 
 	slog.Info(fmt.Sprintf("server listen on %s:%d", cfg.Server.Path, cfg.Server.Port))
 
-	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", cfg.Server.Path, cfg.Server.Port), router.Build()); err != nil {
+	srv := &http.Server{
+		Addr:              cfg.Server.ToString(),
+		Handler:           router.Build(),
+		ReadTimeout:       2 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		WriteTimeout:      2 * time.Second,
+		IdleTimeout:       30 * time.Second,
+	}
+
+	if err := srv.ListenAndServe(); err != nil {
 		return fmt.Errorf("start http serve error: %w", err)
 	}
 
