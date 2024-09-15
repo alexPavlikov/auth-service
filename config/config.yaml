@@ -12,3 +12,4 @@ postgres:
 loglevel: 0
 server_timeout: 500
 secret: qwerty
+email: a.pavlikov2002@gmail.com

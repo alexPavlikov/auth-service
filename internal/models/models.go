@@ -20,3 +20,10 @@ type UserStore struct {
 	RefreshTokenHash string
 	IPAddress        string
 }
+
+type Refresh struct {
+	IP      string
+	Access  string
+	Refresh string
+	User    uuid.UUID
+}

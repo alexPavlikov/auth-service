@@ -50,8 +50,7 @@ func (h *Handler) Auth(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		Domain:   "localhost",
-		Expires:  time.Now().Add(8760 * time.Hour),
-		MaxAge:   31556952,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	}
 
@@ -62,8 +61,7 @@ func (h *Handler) Auth(w http.ResponseWriter, r *http.Request) {
 		Value:    refresh,
 		Path:     "/",
 		Domain:   "localhost",
-		Expires:  time.Now().Add(8760 * time.Hour),
-		MaxAge:   31556952,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	}
 
@@ -71,6 +69,17 @@ func (h *Handler) Auth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
+
+	var us models.UserPayLoad
+
+	dec := json.NewDecoder(r.Body)
+	defer r.Body.Close()
+
+	if err := dec.Decode(&us); err != nil {
+		slog.Error("failed to decode body", "error", err)
+		http.Error(w, "unauthorized", http.StatusForbidden)
+	}
+
 	ip := r.Header.Get("X-Forwarded-For")
 
 	accessCookie, err := r.Cookie("access")
@@ -85,7 +94,14 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusForbidden)
 	}
 
-	accessToken, err := h.Service.RefreshUserAuthToken(ip, accessCookie.Value, refreshCookie.Value)
+	ref := models.Refresh{
+		IP:      ip,
+		Access:  accessCookie.Value,
+		Refresh: refreshCookie.Value,
+		User:    us.UUID,
+	}
+
+	accessToken, refToken, err := h.Service.RefreshUserAuthToken(ref)
 	if err != nil {
 		slog.Error("failed to confirm user auth", "error", err)
 		http.Error(w, "unauthorized", http.StatusForbidden)
@@ -96,10 +112,20 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		Value:    accessToken,
 		Path:     "/",
 		Domain:   "localhost",
-		Expires:  time.Now().Add(8760 * time.Hour),
-		MaxAge:   31556952,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	}
 
 	http.SetCookie(w, &cookieAccess)
+
+	cookieRefresh := http.Cookie{
+		Name:     "refresh",
+		Value:    refToken,
+		Path:     "/",
+		Domain:   "localhost",
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+	}
+
+	http.SetCookie(w, &cookieRefresh)
 }

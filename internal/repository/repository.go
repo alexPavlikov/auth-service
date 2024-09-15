@@ -22,14 +22,16 @@ func New(db *pgxpool.Pool) *Repository {
 
 func (r *Repository) FindUserByUUID(ctx context.Context, userUUID uuid.UUID) (user models.UserStore, err error) {
 	query := `
-	SELECT uuid, email, ip_address FROM "users" WHERE uuid = $1
+	SELECT email, ip_address FROM "users" WHERE uuid = $1
 	`
 
 	row := r.DB.QueryRow(ctx, query, userUUID)
 
-	if err = row.Scan(&user.UUID, &user.Email, &user.IPAddress); err != nil {
+	if err = row.Scan(&user.Email, &user.IPAddress); err != nil {
 		return models.UserStore{}, fmt.Errorf("find user by uuid scan err: %w", err)
 	}
+
+	user.UUID = uuid.MustParse("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
 
 	return user, nil
 }
@@ -46,7 +48,7 @@ func (r *Repository) UpdateUserAuth(ctx context.Context, user models.UserStore) 
 
 func (r *Repository) SelectRefreshHashByUUID(ctx context.Context, uuid uuid.UUID) (string, error) {
 	query := `
-	SELECT hash_refresh_token FROM "users" WHERE uuid = $4
+	SELECT hash_refresh_token FROM "users" WHERE uuid = $1
 	`
 
 	row := r.DB.QueryRow(ctx, query, uuid)
@@ -78,7 +80,7 @@ func (r *Repository) FindAccessTokenByID(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *Repository) UpdateUserAccessTokenID(ctx context.Context, tokenID string, id uuid.UUID) error {
+func (r *Repository) UpdateUserTokens(ctx context.Context, tokenID string, refToken string, id uuid.UUID) error {
 	tx, err := r.DB.Begin(ctx)
 	if err != nil {
 		return err
@@ -86,9 +88,9 @@ func (r *Repository) UpdateUserAccessTokenID(ctx context.Context, tokenID string
 
 	defer tx.Rollback(ctx)
 
-	query := `UPDATE "users" SET id_access_token = $1 WHERE uuid = $4 RETURNING id_access_token`
+	query := `UPDATE "users" SET id_access_token = $1, hash_refresh_token = $2 WHERE uuid = $3 RETURNING id_access_token`
 
-	row := tx.QueryRow(ctx, query, tokenID, id)
+	row := tx.QueryRow(ctx, query, tokenID, refToken, id)
 
 	var access string
 
