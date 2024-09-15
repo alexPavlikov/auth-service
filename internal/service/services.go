@@ -207,7 +207,7 @@ func (s *Service) SendWarningToEmail(email string, ip string) error {
 
 	message := fmt.Sprintf(`Hello, an attempt was made to log in to your account from another ip address - %s if it's not you, contact support`, ip)
 	m.SetBody("text/plain", message)
-	d := gomail.NewDialer("smtp.gmail.com", 587, s.Cfg.Email, "isei dkte iiwl wior")
+	d := gomail.NewDialer("smtp.gmail.com", 587, s.Cfg.Email, "secret code")
 
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
